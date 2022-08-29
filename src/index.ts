@@ -4,11 +4,15 @@ const {
   Client,
   GatewayIntentBits,
   Collection,
+  Routes,
 } = require('discord.js');
+const { REST } = require('@discordjs/rest');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
 client.commands = new Collection();
+
+const commands = [];
 
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs
@@ -19,7 +23,21 @@ for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
   const command = require(filePath);
   client.commands.set(command.data.name, command);
+  commands.push(command.data.toJSON());
 }
+
+const rest = new REST({
+  version: '10',
+}).setToken(process.env.TOKEN);
+
+
+rest.put(Routes.applicationGuildCommands(
+  process.env.CLIENT_ID,
+  process.env.GUILD_ID),
+  { body: commands },
+)
+  .then(() => console.log('Successfully registered bot commands.'))
+  .catch(console.error);
 
 client.once('ready', () => {
   console.log('Ready!');
